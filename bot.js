@@ -28,6 +28,7 @@ async function safeFetch(url) {
 // ======================
 async function getLatestEpisodes() {
   const json = await safeFetch(`${API}/api/list/latest-episodes`);
+  console.log("EPISODIOS:", latest);
   return json?.data || [];
 }
 
