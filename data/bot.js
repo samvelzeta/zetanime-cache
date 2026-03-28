@@ -5,37 +5,46 @@ const API = "https://zetapi-api.samvelzeta.workers.dev";
 const API_KEY = "zetapi_super_secure_2026_v3lz3t4";
 
 // ======================
-// 🔥 OBTENER EPISODIOS
+// 🔥 CONFIG
+// ======================
+const MAX_EPISODES = 25; // cuantos procesa por ciclo
+
+// ======================
+// 🔥 FETCH SEGURO
+// ======================
+async function safeFetch(url) {
+  try {
+    const res = await fetch(url, {
+      headers: { "x-api-key": API_KEY }
+    });
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+// ======================
+// 🔥 OBTENER EPISODIOS NUEVOS
 // ======================
 async function getLatestEpisodes() {
-  try {
-    const res = await fetch(`${API}/api/list/latest-episodes`, {
-      headers: {
-        "x-api-key": API_KEY
-      }
-    });
-
-    const json = await res.json();
-
-    return json?.data || [];
-  } catch {
-    return [];
-  }
+  const json = await safeFetch(`${API}/api/list/latest-episodes`);
+  return json?.data || [];
 }
 
 // ======================
 // 🔥 GUARDAR CACHE
 // ======================
-function saveCache(slug, number, servers) {
+function saveCache(slug, number, lang, servers) {
 
   const dir = `data/${slug}`;
   fs.mkdirSync(dir, { recursive: true });
 
   fs.writeFileSync(
-    `${dir}/${number}.json`,
+    `${dir}/${number}-${lang}.json`,
     JSON.stringify({
       slug,
       episode: number,
+      lang,
       sources: servers,
       updated: Date.now()
     }, null, 2)
@@ -43,37 +52,32 @@ function saveCache(slug, number, servers) {
 }
 
 // ======================
-// 🔥 PROCESAR EPISODIOS
+// 🔥 PROCESAR EPISODIO
 // ======================
-async function processEpisode(ep) {
+async function processEpisode(slug, number, lang) {
 
-  const slug = ep.slug;
-  const number = ep.number;
+  const url = `${API}/api/anime/episode/${slug}/${number}?lang=${lang}`;
 
-  try {
+  const json = await safeFetch(url);
 
-    const res = await fetch(
-      `${API}/api/anime/episode/${slug}/${number}?lang=latino`,
-      {
-        headers: {
-          "x-api-key": API_KEY
-        }
-      }
-    );
+  const servers = json?.data?.servers || [];
 
-    const json = await res.json();
+  if (!servers.length) return false;
 
-    const servers = json?.data?.servers || [];
+  saveCache(slug, number, lang, servers);
 
-    if (!servers.length) return;
+  console.log(`✔ ${slug} - ${number} (${lang})`);
 
-    saveCache(slug, number, servers);
+  return true;
+}
 
-    console.log(`✔ ${slug} - ${number}`);
+// ======================
+// 🔥 REINTENTO
+// ======================
+async function retryEpisode(slug, number) {
 
-  } catch (err) {
-    console.log(`❌ error ${slug} ${number}`);
-  }
+  await processEpisode(slug, number, "latino");
+  await processEpisode(slug, number, "sub");
 }
 
 // ======================
@@ -81,12 +85,36 @@ async function processEpisode(ep) {
 // ======================
 async function run() {
 
+  console.log("🚀 BOT INICIADO");
+
   const latest = await getLatestEpisodes();
 
-  for (const ep of latest.slice(0, 20)) {
-    await processEpisode(ep);
+  let count = 0;
+
+  for (const ep of latest) {
+
+    if (count >= MAX_EPISODES) break;
+
+    const slug = ep.slug;
+    const number = ep.number;
+
+    // 🔥 LATINO PRIMERO
+    const latinoOk = await processEpisode(slug, number, "latino");
+
+    // 🔥 SUB SI FALLA LATINO
+    if (!latinoOk) {
+      await processEpisode(slug, number, "sub");
+    }
+
+    // 🔥 REINTENTO
+    if (!latinoOk) {
+      await retryEpisode(slug, number);
+    }
+
+    count++;
   }
 
+  console.log("✅ BOT FINALIZADO");
 }
 
 run();
