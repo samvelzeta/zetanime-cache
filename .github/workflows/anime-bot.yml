@@ -1,5 +1,9 @@
 name: anime-bot
 
+# 🔥 PERMISOS PARA HACER PUSH
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
   schedule:
@@ -11,10 +15,23 @@ jobs:
 
     steps:
       # ======================
-      # 🟢 CLONAR REPO
-      # ======================ss
+      # 🟢 CLONAR REPO (FORZADO A MAIN)
+      # ======================
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: main
+
+      # ======================
+      # 🟢 DEBUG REAL
+      # ======================
+      - name: Debug repo
+        run: |
+          echo "===== ROOT ====="
+          pwd
+          ls -la
+          echo "===== TREE ====="
+          ls -R
 
       # ======================
       # 🟢 NODE
@@ -25,7 +42,7 @@ jobs:
           node-version: 20
 
       # ======================
-      # 🟢 CREAR ENTORNO NODE
+      # 🟢 CREAR ENTORNO
       # ======================
       - name: Init project
         run: |
@@ -33,22 +50,28 @@ jobs:
           npm pkg set type=module
 
       # ======================
-      # 🟢 INSTALAR DEPENDENCIAS
+      # 🟢 DEPENDENCIAS
       # ======================
       - name: Install dependencies
         run: npm install node-fetch@3
 
       # ======================
-      # 🟢 DEBUG (MUY IMPORTANTE)
+      # 🟢 VERIFICAR BOT
       # ======================
-      - name: Show files
-        run: ls -R
+      - name: Check bot exists
+        run: |
+          if [ ! -f "bot.js" ]; then
+            echo "❌ bot.js NO EXISTE EN ROOT"
+            exit 1
+          else
+            echo "✅ bot.js encontrado"
+          fi
 
       # ======================
       # 🟢 EJECUTAR BOT
       # ======================
       - name: Run bot
-        run: node bot.js
+        run: node ./bot.js
 
       # ======================
       # 🟢 GUARDAR CACHE
