@@ -27,9 +27,17 @@ async function safeFetch(url) {
 // 🔥 OBTENER EPISODIOS
 // ======================
 async function getLatestEpisodes() {
+
   const json = await safeFetch(`${API}/api/list/latest-episodes`);
-  console.log("EPISODIOS:", latest);
-  return json?.data || [];
+
+  if (!json) {
+    console.log("❌ ERROR: API no respondió");
+    return [];
+  }
+
+  console.log("📡 RESPUESTA API:", json);
+
+  return json.data || [];
 }
 
 // ======================
