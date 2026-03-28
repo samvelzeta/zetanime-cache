@@ -1,0 +1,33 @@
+name: anime-bot
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */3 * * *'
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install node-fetch
+
+      - name: Run bot
+        run: node bot.js
+
+      - name: Commit changes
+        run: |
+          git config --global user.name "anime-bot"
+          git config --global user.email "bot@anime.com"
+          git add .
+          git commit -m "update cache" || echo "no changes"
+          git push
