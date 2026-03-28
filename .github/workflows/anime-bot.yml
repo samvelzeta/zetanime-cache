@@ -10,20 +10,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ======================
+      # 🟢 CLONAR REPO
+      # ======================
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
+      # ======================
+      # 🟢 NODE
+      # ======================
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
+      # ======================
+      # 🟢 CREAR ENTORNO NODE
+      # ======================
+      - name: Init project
+        run: |
+          npm init -y
+          npm pkg set type=module
+
+      # ======================
+      # 🟢 INSTALAR DEPENDENCIAS
+      # ======================
       - name: Install dependencies
-        run: npm install node-fetch
+        run: npm install node-fetch@3
 
+      # ======================
+      # 🟢 DEBUG (MUY IMPORTANTE)
+      # ======================
+      - name: Show files
+        run: ls -R
+
+      # ======================
+      # 🟢 EJECUTAR BOT
+      # ======================
       - name: Run bot
         run: node bot.js
 
+      # ======================
+      # 🟢 GUARDAR CACHE
+      # ======================
       - name: Commit changes
         run: |
           git config --global user.name "anime-bot"
