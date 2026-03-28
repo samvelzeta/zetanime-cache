@@ -1,9 +1,8 @@
-
 name: anime-bot
 
 on:
   schedule:
-    - cron: "0 */3 * * *" # cada 3 horas
+    - cron: "0 */3 * * *"
   workflow_dispatch:
 
 jobs:
@@ -11,21 +10,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Clonar repo
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Instalar Node
+      - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      - name: Instalar dependencias
-        run: npm install node-fetch fs
+      - name: Install deps
+        run: npm install node-fetch
 
-      - name: Ejecutar bot
+      - name: Run bot
         run: node bot.js
 
-      - name: Guardar cambios
+      - name: Commit changes
         run: |
           git config --global user.name "anime-bot"
           git config --global user.email "bot@anime.com"
