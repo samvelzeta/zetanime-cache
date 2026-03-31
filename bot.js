@@ -2,7 +2,7 @@ import fs from "fs";
 import fetch from "node-fetch";
 
 const API = "https://zetapi-api.samvelzeta.workers.dev";
-const API_KEY = "zetapi_super_secure_2026_v3lz3t4";
+const API_KEY = process.env.API_KEY;
 
 // ======================
 // 🔥 CONFIG
