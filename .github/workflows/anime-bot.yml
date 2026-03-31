@@ -7,7 +7,7 @@ permissions:
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */3 * * *'
+    - cron: '0 */6 * * *'
 
 jobs:
   run-bot:
@@ -15,7 +15,7 @@ jobs:
 
     steps:
       # ======================
-      # 🟢 CLONAR REPO (FORZADO A MAIN)
+      # 🟢 CLONAR REPO
       # ======================
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,7 +23,7 @@ jobs:
           ref: main
 
       # ======================
-      # 🟢 DEBUG REAL
+      # 🟢 DEBUG (MUY ÚTIL)
       # ======================
       - name: Debug repo
         run: |
@@ -68,10 +68,12 @@ jobs:
           fi
 
       # ======================
-      # 🟢 EJECUTAR BOT
+      # 🟢 EJECUTAR BOT (CON API KEY)
       # ======================
       - name: Run bot
         run: node ./bot.js
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
 
       # ======================
       # 🟢 GUARDAR CACHE
