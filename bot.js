@@ -114,7 +114,10 @@ async function processEpisode(slug, number) {
 
   console.log(`🔍 ${slug} - ${number}`);
 
-  const url = `${API}/api/anime/episode/${slug}/${number}?lang=sub`;
+  // 🔥 FIX SLUG
+  const cleanSlug = slug.replace(/-\d+$/, "");
+
+  const url = `${API}/api/anime/episode/${cleanSlug}/${number}?lang=sub`;
 
   const json = await safeFetch(url);
 
@@ -126,6 +129,11 @@ async function processEpisode(slug, number) {
   }
 
   const sources = classifyServers(servers);
+
+  await saveCache(cleanSlug, number, "sub", sources);
+
+  return true;
+}
 
   // 🔥 GUARDA TODO (como pediste)
   await saveCache(slug, number, "sub", sources);
