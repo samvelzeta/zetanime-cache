@@ -1,4 +1,3 @@
-import fs from "fs";
 import fetch from "node-fetch";
 
 const API = "https://zetapi-api.samvelzeta.workers.dev";
@@ -27,6 +26,45 @@ async function getLatestEpisodes() {
   }
 
   return json.data || [];
+}
+
+// ======================
+// 🔥 LIMPIAR SLUG (CLAVE REAL)
+// ======================
+function cleanSlug(slug) {
+
+  return slug
+    .toLowerCase()
+    .replace(/-\d+$/, "") // quitar cap
+    .replace(/season-\d+/g, "")
+    .replace(/-tv/g, "")
+    .replace(/-bd/g, "")
+    .replace(/-sub/g, "")
+    .replace(/-latino/g, "")
+    .replace(/-{2,}/g, "-")
+    .trim();
+}
+
+// ======================
+// 🔥 GENERAR VARIANTES (CLAVE)
+// ======================
+function generateVariants(slug) {
+
+  const base = cleanSlug(slug);
+
+  const variants = new Set();
+
+  variants.add(base);
+  variants.add(base.replace(/-/g, ""));
+  variants.add(base.replace(/-/g, "_"));
+
+  // 🔥 cortar nombres largos
+  const words = base.split("-");
+  if (words.length > 3) {
+    variants.add(words.slice(0, 3).join("-"));
+  }
+
+  return Array.from(variants);
 }
 
 // ======================
@@ -62,7 +100,7 @@ function classifyServers(servers) {
 }
 
 // ======================
-// 🔥 GUARDAR EN GITHUB (IGUAL QUE ANTES)
+// 🔥 GUARDAR EN GITHUB
 // ======================
 async function saveCache(slug, number, lang, sources) {
 
@@ -110,41 +148,50 @@ async function saveCache(slug, number, lang, sources) {
 }
 
 // ======================
+// 🔥 PROCESAR EPISODIO (FIX REAL)
+// ======================
 async function processEpisode(slug, number) {
 
   console.log(`🔍 ${slug} - ${number}`);
 
-  // 🔥 FIX SLUG
-  const cleanSlug = slug.replace(/-\d+$/, "");
+  const variants = generateVariants(slug);
 
-  const url = `${API}/api/anime/episode/${cleanSlug}/${number}?lang=sub`;
+  for (const v of variants) {
 
-  const json = await safeFetch(url);
+    const url = `${API}/api/anime/episode/${v}/${number}?lang=sub`;
 
-  const servers = json?.data?.servers || [];
+    const json = await safeFetch(url);
 
-  if (!servers.length) {
-    console.log("❌ sin servers");
-    return false;
+    const servers = json?.data?.servers || [];
+
+    if (!servers.length) continue;
+
+    const sources = classifyServers(servers);
+
+    // 🔥 VALIDACIÓN REAL
+    if (
+      !sources.hls.length &&
+      !sources.mp4.length &&
+      !sources.embed.length
+    ) continue;
+
+    await saveCache(v, number, "sub", sources);
+
+    console.log(`✔ encontrado con ${v}`);
+
+    return true;
   }
 
-  const sources = classifyServers(servers);
-
-  await saveCache(cleanSlug, number, "sub", sources);
-
-  return true;
-}
-
-  // 🔥 GUARDA TODO (como pediste)
-  await saveCache(slug, number, "sub", sources);
-
-  return true;
+  console.log("❌ sin servers");
+  return false;
 }
 
 // ======================
+// 🔥 MAIN
+// ======================
 async function run() {
 
-  console.log("🚀 BOT CACHE REAL");
+  console.log("🚀 BOT CACHE PRO");
 
   const latest = await getLatestEpisodes();
 
