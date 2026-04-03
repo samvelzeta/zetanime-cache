@@ -1,5 +1,5 @@
-import fs from "fs";
 import { getAllServers } from "./server/utils/getServers";
+import { saveCache } from "./server/utils/cache";
 
 // ======================
 const MAX_EPISODES = 25;
@@ -8,6 +8,7 @@ const MAX_EPISODES = 25;
 function classifyServers(servers) {
 
   const hls = [];
+  const mp4 = [];
   const embed = [];
 
   for (const s of servers) {
@@ -16,34 +17,16 @@ function classifyServers(servers) {
 
     if (!url) continue;
 
-    if (url.includes(".m3u8")) {
-      hls.push(url);
-    } else {
-      embed.push(url);
-    }
+    if (url.includes(".m3u8")) hls.push(url);
+    else if (url.includes(".mp4")) mp4.push(url);
+    else embed.push(url);
   }
 
   return {
     hls: [...new Set(hls)],
+    mp4: [...new Set(mp4)],
     embed: [...new Set(embed)]
   };
-}
-
-// ======================
-function saveCache(slug, number, sources) {
-
-  const dir = `data/${slug}`;
-  fs.mkdirSync(dir, { recursive: true });
-
-  fs.writeFileSync(
-    `${dir}/${number}-sub.json`,
-    JSON.stringify({
-      slug,
-      episode: number,
-      sources,
-      updated: Date.now()
-    }, null, 2)
-  );
 }
 
 // ======================
@@ -65,15 +48,10 @@ async function processEpisode(slug, number) {
 
   const sources = classifyServers(servers);
 
-  // 🔥 SOLO GUARDAR SI HAY HLS
-  if (!sources.hls.length) {
-    console.log("⚠️ sin HLS, ignorado");
-    return false;
-  }
+  // 🔥 AHORA GUARDA TODO (no solo HLS)
+  await saveCache(slug, number, "sub", servers);
 
-  saveCache(slug, number, sources);
-
-  console.log("✅ guardado");
+  console.log("✅ guardado en cache");
 
   return true;
 }
@@ -81,19 +59,20 @@ async function processEpisode(slug, number) {
 // ======================
 async function run() {
 
-  console.log("🚀 BOT NUEVO");
+  console.log("🚀 BOT PRO REAL");
 
   const testList = [
     { slug: "one-piece", number: 1 },
     { slug: "naruto", number: 1 },
-    { slug: "attack-on-titan", number: 1 }
+    { slug: "shingeki-no-kyojin", number: 1 },
+    { slug: "kimetsu-no-yaiba", number: 1 }
   ];
 
   for (const ep of testList) {
     await processEpisode(ep.slug, ep.number);
   }
 
-  console.log("✅ FIN");
+  console.log("✅ BOT FINALIZADO");
 }
 
 run();
