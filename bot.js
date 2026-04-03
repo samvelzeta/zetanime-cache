@@ -1,8 +1,33 @@
-import { getAllServers } from "./server/utils/getServers.js";
-import { saveCache } from "./server/utils/cache.js";
+import fs from "fs";
+import fetch from "node-fetch";
+
+const API = "https://zetapi-api.samvelzeta.workers.dev";
 
 // ======================
 const MAX_EPISODES = 25;
+
+// ======================
+async function safeFetch(url) {
+  try {
+    const res = await fetch(url);
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+// ======================
+async function getLatestEpisodes() {
+
+  const json = await safeFetch(`${API}/api/list/latest-episodes`);
+
+  if (!json) {
+    console.log("❌ API no respondió");
+    return [];
+  }
+
+  return json.data || [];
+}
 
 // ======================
 function classifyServers(servers) {
@@ -17,6 +42,13 @@ function classifyServers(servers) {
 
     if (!url) continue;
 
+    if (
+      url.includes("facebook") ||
+      url.includes("twitter") ||
+      url.includes(".css") ||
+      url.includes(".js")
+    ) continue;
+
     if (url.includes(".m3u8")) hls.push(url);
     else if (url.includes(".mp4")) mp4.push(url);
     else embed.push(url);
@@ -30,16 +62,63 @@ function classifyServers(servers) {
 }
 
 // ======================
+// 🔥 GUARDAR EN GITHUB (IGUAL QUE ANTES)
+// ======================
+async function saveCache(slug, number, lang, sources) {
+
+  const token = process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    console.log("❌ NO TOKEN");
+    return;
+  }
+
+  const path = `data/${slug}/${number}-${lang}.json`;
+
+  const apiUrl = `https://api.github.com/repos/samvelzeta/zetanime-cache/contents/${path}`;
+
+  let sha = null;
+
+  const existing = await fetch(apiUrl, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  if (existing.ok) {
+    const data = await existing.json();
+    sha = data.sha;
+  }
+
+  const payload = {
+    sources,
+    updated: Date.now()
+  };
+
+  await fetch(apiUrl, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      message: `update ${slug} ep ${number}`,
+      content: Buffer.from(JSON.stringify(payload, null, 2)).toString("base64"),
+      sha
+    })
+  });
+
+  console.log(`💾 guardado ${slug} ep ${number}`);
+}
+
+// ======================
 async function processEpisode(slug, number) {
 
   console.log(`🔍 ${slug} - ${number}`);
 
-  const servers = await getAllServers({
-    slug,
-    number,
-    title: slug,
-    lang: "sub"
-  });
+  const url = `${API}/api/anime/episode/${slug}/${number}?lang=sub`;
+
+  const json = await safeFetch(url);
+
+  const servers = json?.data?.servers || [];
 
   if (!servers.length) {
     console.log("❌ sin servers");
@@ -48,10 +127,8 @@ async function processEpisode(slug, number) {
 
   const sources = classifyServers(servers);
 
-  // 🔥 AHORA GUARDA TODO (no solo HLS)
-  await saveCache(slug, number, "sub", servers);
-
-  console.log("✅ guardado en cache");
+  // 🔥 GUARDA TODO (como pediste)
+  await saveCache(slug, number, "sub", sources);
 
   return true;
 }
@@ -59,20 +136,27 @@ async function processEpisode(slug, number) {
 // ======================
 async function run() {
 
-  console.log("🚀 BOT PRO REAL");
+  console.log("🚀 BOT CACHE REAL");
 
-  const testList = [
-    { slug: "one-piece", number: 1 },
-    { slug: "naruto", number: 1 },
-    { slug: "shingeki-no-kyojin", number: 1 },
-    { slug: "kimetsu-no-yaiba", number: 1 }
-  ];
+  const latest = await getLatestEpisodes();
 
-  for (const ep of testList) {
-    await processEpisode(ep.slug, ep.number);
+  let count = 0;
+
+  for (const ep of latest) {
+
+    if (count >= MAX_EPISODES) break;
+
+    const ok = await processEpisode(ep.slug, ep.number);
+
+    if (!ok) {
+      console.log("🔁 retry...");
+      await processEpisode(ep.slug, ep.number);
+    }
+
+    count++;
   }
 
-  console.log("✅ BOT FINALIZADO");
+  console.log("✅ BOT TERMINADO");
 }
 
 run();
