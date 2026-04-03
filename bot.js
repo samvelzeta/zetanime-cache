@@ -1,5 +1,5 @@
-import { getAllServers } from "./server/utils/getServers";
-import { saveCache } from "./server/utils/cache";
+import { getAllServers } from "./server/utils/getServers.js";
+import { saveCache } from "./server/utils/cache.js";
 
 // ======================
 const MAX_EPISODES = 25;
