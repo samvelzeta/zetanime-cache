@@ -2,6 +2,26 @@ import fetch from "node-fetch";
 
 const API = "https://zetapi-api.samvelzeta.workers.dev";
 
+async function fetchEpisode(slug, ep, lang) {
+  try {
+
+    const res = await fetch(
+      `${API}/api/anime/episode/${slug}/${ep}?lang=${lang}`
+    );
+
+    const data = await res.json();
+
+    if (data?.data?.servers?.length) {
+      console.log(`✔ ${slug} ep ${ep} [${lang}]`);
+    } else {
+      console.log(`❌ vacío ${slug} ep ${ep} [${lang}]`);
+    }
+
+  } catch (e) {
+    console.log("error:", slug, ep, lang);
+  }
+}
+
 async function run() {
 
   console.log("🚀 BOT KV");
@@ -18,23 +38,8 @@ async function run() {
 
       console.log(`🔍 ${slug} ep ${ep}`);
 
-      try {
-
-        const res = await fetch(
-          `${API}/api/anime/episode/${slug}/${ep}?lang=sub`
-        );
-
-        const data = await res.json();
-
-        if (data?.data?.servers?.length) {
-          console.log("✔ OK");
-        } else {
-          console.log("❌ vacío");
-        }
-
-      } catch {
-        console.log("error");
-      }
+      await fetchEpisode(slug, ep, "sub");
+      await fetchEpisode(slug, ep, "latino");
 
       await new Promise(r => setTimeout(r, 2000));
     }
