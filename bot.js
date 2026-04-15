@@ -2,36 +2,41 @@ import fetch from "node-fetch";
 
 const API = "https://zetapi-api.samvelzeta.workers.dev";
 
-async function safeFetch(url) {
-  try {
-    const res = await fetch(url);
-    return await res.json();
-  } catch {
-    return null;
-  }
-}
-
 async function run() {
 
-  console.log("🚀 BOT PRO");
+  console.log("🚀 BOT KV");
 
-  const latest = await safeFetch(`${API}/api/list/latest-episodes`);
+  const animes = [
+    "jujutsu-kaisen",
+    "one-piece",
+    "kimetsu-no-yaiba"
+  ];
 
-  for (const ep of latest?.data || []) {
+  for (const slug of animes) {
 
-    const slug = ep.slug.replace(/-\d+$/, "");
-    const number = ep.number;
+    for (let ep = 1; ep <= 5; ep++) {
 
-    console.log(`🔍 ${slug} - ${number}`);
+      console.log(`🔍 ${slug} ep ${ep}`);
 
-    const res = await safeFetch(
-      `${API}/api/anime/episode/${slug}/${number}?lang=sub`
-    );
+      try {
 
-    if (res?.data?.servers?.length) {
-      console.log("✔ guardado");
-    } else {
-      console.log("❌ sin servers");
+        const res = await fetch(
+          `${API}/api/anime/episode/${slug}/${ep}?lang=sub`
+        );
+
+        const data = await res.json();
+
+        if (data?.data?.servers?.length) {
+          console.log("✔ OK");
+        } else {
+          console.log("❌ vacío");
+        }
+
+      } catch {
+        console.log("error");
+      }
+
+      await new Promise(r => setTimeout(r, 2000));
     }
   }
 }
