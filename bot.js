@@ -4,7 +4,6 @@ const API = "https://zetapi-api.samvelzeta.workers.dev";
 
 async function fetchEpisode(slug, ep, lang) {
   try {
-
     const res = await fetch(
       `${API}/api/anime/episode/${slug}/${ep}?lang=${lang}`
     );
@@ -24,7 +23,7 @@ async function fetchEpisode(slug, ep, lang) {
 
 async function run() {
 
-  console.log("🚀 BOT KV");
+  console.log("🚀 BOT KV RUNNING");
 
   const animes = [
     "jujutsu-kaisen",
